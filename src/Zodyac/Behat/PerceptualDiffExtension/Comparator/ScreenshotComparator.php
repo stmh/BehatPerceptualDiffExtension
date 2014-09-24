@@ -2,9 +2,11 @@
 
 namespace Zodyac\Behat\PerceptualDiffExtension\Comparator;
 
+use Behat\Gherkin\Node\ScenarioNode;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Behat\Behat\Context\ContextInterface;
 use Behat\Behat\Event\ScenarioEvent;
+use Behat\Behat\Event\OutlineEvent;
 use Behat\Gherkin\Node\StepNode;
 
 class ScreenshotComparator implements EventSubscriberInterface
@@ -58,6 +60,13 @@ class ScreenshotComparator implements EventSubscriberInterface
      */
     protected $diffs = array();
 
+    /**
+     * Storage for steps with diff results.
+     *
+     * @var array
+     */
+    protected $storedSteps = array();
+
     public function __construct($path, $sleep, array $compareOptions)
     {
         $this->path = rtrim($path, '/') . '/';
@@ -70,7 +79,8 @@ class ScreenshotComparator implements EventSubscriberInterface
     {
         return array(
             'beforeSuite' => 'clearScreenshotDiffs',
-            'beforeScenario' => 'resetStepCounter'
+            'beforeScenario' => 'resetStepCounter',
+            'beforeOutline' => 'resetStepCounter'
         );
     }
 
@@ -144,11 +154,11 @@ class ScreenshotComparator implements EventSubscriberInterface
     /**
      * Keep track of the current scenario and step number for use in the file name
      *
-     * @param ScenarioEvent $event
+     * @param ScenarioEvent|OutlineEvent $event
      */
-    public function resetStepCounter(ScenarioEvent $event)
+    public function resetStepCounter($event)
     {
-        $this->currentScenario = $event->getScenario();
+        $this->currentScenario = $event instanceof ScenarioEvent ? $event->getScenario() : $event->getOutline();
         $this->stepNumber = 0;
     }
 
@@ -206,6 +216,9 @@ class ScreenshotComparator implements EventSubscriberInterface
 
                 // Record the diff for output
                 $this->diffs[spl_object_hash($step)] = $this->getFilepath($step);
+                // Keep a reference to the step object so that the object hash
+                // can't be reused.
+                $this->storedSteps[] = $step;
             } elseif (is_file($tempFile)) {
                 // Clean up the temp file
                 unlink($tempFile);
