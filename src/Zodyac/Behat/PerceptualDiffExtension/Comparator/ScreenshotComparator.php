@@ -207,7 +207,7 @@ class ScreenshotComparator implements EventSubscriberInterface
 
         if ($return === 0 || $return === 1) {
             // Check that there are some differences
-            if ($return === 1) {
+            if ($return === 1 || intval($output[0]) > 0) {
                 $diffFile = str_replace($screenshotPath, $diffPath, $screenshotFile);
                 $this->ensureDirectoryExists($diffFile);
 
