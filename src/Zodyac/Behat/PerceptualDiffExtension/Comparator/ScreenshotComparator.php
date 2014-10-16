@@ -141,6 +141,15 @@ class ScreenshotComparator implements EventSubscriberInterface
     }
 
     /**
+     * Returns the path to images showing areas to be ignored
+     *
+     * @return string
+     */
+    public function getMaskPath() {
+        return $this->path . 'ignore/';
+    }
+
+    /**
      * Remove all the previous diffs
      */
     public function clearScreenshotDiffs()
@@ -167,6 +176,11 @@ class ScreenshotComparator implements EventSubscriberInterface
      *
      * @param RawMinkContext $context
      * @param StepNode $step
+     *
+     * @returns mixed
+     *   The amount of the perceptual diff as returned by the imagemagick
+     *   compare command, or FALSE if there was no difference (or if no
+     *   comparison was made).
      */
     public function takeScreenshot(RawMinkContext $context, StepNode $step)
     {
@@ -195,19 +209,40 @@ class ScreenshotComparator implements EventSubscriberInterface
 
             // New step, move into the baseline but return as there is no need for a comparison
             copy($screenshotFile, $baselineFile);
-            return;
+            return false;
         }
 
         // Output the comparison to a temp file
-        $tempFile = $this->path . '/temp.png';
+        $tempFile = $this->path . 'temp.png';
+
+        // Path to an image showing areas to be ignored in the comparison
+        $maskPath = $this->getMaskPath();
+        $maskFile = str_replace($screenshotPath, $maskPath, $screenshotFile);
+        if (is_file($maskFile)) {
+            // Create temp images for comparison that blank out the masked area.
+            $baselineTempFile = $this->path . 'baseline-temp.png';
+            $this->getMaskedFile($baselineFile, $maskFile, $baselineTempFile);
+            $screenshotTempFile = $this->path . 'screenshot-temp.png';
+            $this->getMaskedFile($screenshotFile, $maskFile, $screenshotTempFile);
+            $compareCommand = $this->getCompareCommand($baselineTempFile, $screenshotTempFile, $tempFile);
+        }
+        else {
+            $compareCommand = $this->getCompareCommand($baselineFile, $screenshotFile, $tempFile);
+        }
 
         // Run the comparison
         $output = array();
-        exec($this->getCompareCommand($baselineFile, $screenshotFile, $tempFile), $output, $return);
+        exec($compareCommand, $output, $return);
+
+        // Clean up any mask files.
+        $this->removeFile($this->path . 'baseline-temp.png');
+        $this->removeFile($this->path . 'screenshot-temp.png');
 
         if ($return === 0 || $return === 1) {
+            $diff = intval($output[0]);
+
             // Check that there are some differences
-            if ($return === 1 || intval($output[0]) > 0) {
+            if ($return === 1 || $diff > 0) {
                 $diffFile = str_replace($screenshotPath, $diffPath, $screenshotFile);
                 $this->ensureDirectoryExists($diffFile);
 
@@ -224,7 +259,7 @@ class ScreenshotComparator implements EventSubscriberInterface
                 unlink($tempFile);
             }
 
-            return $output[0];
+            return $diff;
         }
 
         return false;
@@ -266,6 +301,12 @@ class ScreenshotComparator implements EventSubscriberInterface
         return rmdir($path);
     }
 
+    protected function removeFile($path) {
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+
     /**
      * Returns the ImageMagick compare command with the correct arguments.
      *
@@ -301,6 +342,18 @@ class ScreenshotComparator implements EventSubscriberInterface
             $this->stepNumber,
             $this->formatString($step->getText())
         );
+    }
+
+    protected function getMaskedFile($base, $mask, $result) {
+        $command = sprintf(
+            'composite %s %s %s',
+            escapeshellarg($mask),
+            escapeshellarg($base),
+            escapeshellarg($result)
+        );
+        $output = array();
+        exec($command, $output, $return);
+        return $return;
     }
 
     /**
