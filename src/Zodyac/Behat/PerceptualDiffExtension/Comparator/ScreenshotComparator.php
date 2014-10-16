@@ -4,7 +4,7 @@ namespace Zodyac\Behat\PerceptualDiffExtension\Comparator;
 
 use Behat\Gherkin\Node\ScenarioNode;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Behat\Behat\Context\ContextInterface;
+use Behat\MinkExtension\Context\RawMinkContext;
 use Behat\Behat\Event\ScenarioEvent;
 use Behat\Behat\Event\OutlineEvent;
 use Behat\Gherkin\Node\StepNode;
@@ -165,10 +165,10 @@ class ScreenshotComparator implements EventSubscriberInterface
     /**
      * Takes a screenshot if the step passes and compares it to the baseline
      *
-     * @param ContextInterface $context
+     * @param RawMinkContext $context
      * @param StepNode $step
      */
-    public function takeScreenshot(ContextInterface $context, StepNode $step)
+    public function takeScreenshot(RawMinkContext $context, StepNode $step)
     {
         // Increment the step number
         $this->stepNumber++;
