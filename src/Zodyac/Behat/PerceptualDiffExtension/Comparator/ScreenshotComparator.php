@@ -184,6 +184,11 @@ class ScreenshotComparator implements EventSubscriberInterface
      */
     public function takeScreenshot(RawMinkContext $context, StepNode $step)
     {
+        $driver = $context->getSession()->getDriver();
+        if (!($driver instanceof Selenium2Driver)) {
+            return false;
+        }
+
         // Increment the step number
         $this->stepNumber++;
 
@@ -197,7 +202,9 @@ class ScreenshotComparator implements EventSubscriberInterface
         $this->ensureDirectoryExists($screenshotFile);
 
         // Save the screenshot
+
         file_put_contents($screenshotFile, $context->getSession()->getScreenshot());
+
 
         // Comparison
         $baselinePath = $this->getBaselinePath();
