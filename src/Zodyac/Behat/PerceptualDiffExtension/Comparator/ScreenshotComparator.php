@@ -8,6 +8,7 @@ use Behat\MinkExtension\Context\RawMinkContext;
 use Behat\Behat\Event\ScenarioEvent;
 use Behat\Behat\Event\OutlineEvent;
 use Behat\Gherkin\Node\StepNode;
+use Behat\Mink\Driver\Selenium2Driver;
 
 class ScreenshotComparator implements EventSubscriberInterface
 {
