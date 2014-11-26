@@ -25,21 +25,33 @@ class HtmlFormatterListener implements EventSubscriberInterface
         );
     }
 
+    protected static function createUrl($path, $basePath) {
+        return str_replace($basePath, 'pdiffs/', $path);
+    }
+
     public function printPdiff(FormatterStepEvent $event)
     {
         // Get the diff filename
         $filename = $this->screenshotComparator->getDiff($event->getStep());
         if ($filename !== null) {
+
+            $basePath = $this->screenshotComparator->getBasePath();
+
+
             // Output the pdiff section if there was a diff
             $baselinePath = $this->screenshotComparator->getBaselinePath() . $filename;
             $diffPath = $this->screenshotComparator->getDiffPath() . $filename;
             $screenshotPath = $this->screenshotComparator->getScreenshotPath() . $filename;
 
+            $baselineUrl = $this->createUrl($baselinePath, $basePath);
+            $diffUrl = $this->createUrl($diffPath, $basePath);
+            $screenshotUrl = $this->createUrl($screenshotPath, $basePath);
+
             $html = <<<TEMPLATE
             <div class="pdiff">
-                <a href="file://$baselinePath" target="new"><img alt="Baseline" src="file://$baselinePath" /></a>
-                <a href="file://$diffPath" target="new"><img alt="Diff" src="file://$diffPath" /></a>
-                <a href="file://$screenshotPath" target="new"><img alt="Current" src="file://$screenshotPath" /></a>
+                <a href="$baselineUrl" target="new"><img alt="Baseline" src="$baselineUrl" /></a>
+                <a href="$diffUrl" target="new"><img alt="Diff" src="$diffUrl" /></a>
+                <a href="$screenshotUrl" target="new"><img alt="Current" src="$screenshotUrl" /></a>
             </div>
 TEMPLATE;
 
@@ -57,7 +69,8 @@ TEMPLATE;
         $styles = <<<TEMPLATE
         <style type="text/css">
         #behat .pdiff img {
-            width:300px;
+            width: 300px;
+            height: auto;
             margin:5px;
             border:2px solid #aaa;
         }
@@ -67,3 +80,4 @@ TEMPLATE;
         $event->writeln($styles);
     }
 }
+

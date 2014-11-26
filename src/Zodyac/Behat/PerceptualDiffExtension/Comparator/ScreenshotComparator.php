@@ -142,6 +142,16 @@ class ScreenshotComparator implements EventSubscriberInterface
     }
 
     /**
+     * Returns the base path
+     *
+     * @return string
+     */
+    public function getBasePath()
+    {
+        return $this->path;
+    }
+
+    /**
      * Returns the path to images showing areas to be ignored
      *
      * @return string
