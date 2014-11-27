@@ -279,6 +279,9 @@ class ScreenshotComparator implements EventSubscriberInterface
 
             return $diff;
         }
+        elseif ($return == 127) {
+            throw new Behat\Behat\Exception('Could not run visual regression test, as compare was not found!');
+        }
 
         return false;
     }
